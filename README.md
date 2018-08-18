@@ -1,7 +1,7 @@
 # •Sum•
 __Void°Doctrine__ is a low-profile userdata observer, made to detect and log visible [vKontakte](https://vk.com) page changes on demand.  
 Just specify a file with some ids/screennames or paste them in `feed.txt` to watch what people do beyond you.  
-__Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/download/v0.1/Void.Doctrine.exe (direct link)
+__Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/download/0.1/Void.Doctrine.exe (direct link)
 
 # •Featuræ•
 * No app dependence, stock [API tokens](https://vk.com/dev/access_token) can always be overriden with `-t:<token>` argument.
