@@ -8,7 +8,7 @@ __Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/downl
 * No particular app dependence, stock [API token](https://vk.com/dev/access_token) can easily be overriden with `-t:<token>` argument.
 * No need for account credentials, fetching mechanism is designed to work without auth.
 * No installation, placing single executable to some writeable dir is enough.
-* No external requirements beyond VC runtime.
+* No external requirements beyond vanilla VC runtime.
 
 # •Reassembling•
 __Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.  
