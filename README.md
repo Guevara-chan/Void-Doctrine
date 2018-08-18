@@ -12,3 +12,6 @@ Just specify a file with some ids/screennames or paste them in `feed.txt` to wat
 # •Reassembling•
 __Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.  
 Automated build script provided as `release.nims`.
+
+# Brief samples of interfacing:
+![image](https://user-images.githubusercontent.com/8768470/44298045-a76d4700-a2e4-11e8-8dd1-19707265e83e.png)
