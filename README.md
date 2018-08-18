@@ -4,9 +4,9 @@ Developed to be as inconspicuous as possible, it's packed in single executable w
 Just specify a file with some ids/screennames or paste them in `feed.txt` to watch what people do beyond you.
 
 # •Featuræ•
-* No online activity markers, fetching mechanism is designed to work without auth.
+* No account credentials required, fetching mechanism is designed to work without auth.
 * No installation, placing _Void°Doctrine.exe_ to some writeable dir is enough.
-* No account credentials required to work (stock token included).
+* No binding, API token can always be redefined with `-t:<token>' argument.
 * No external dependencies beyond VC runtime.
 
 # •Reassembling•
