@@ -6,7 +6,7 @@ __Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/downl
 # •Featuræ•
 * No app dependence, stock [API tokens](https://vk.com/dev/access_token) can always be overriden with `-t:<token>` argument.
 * No account credentials required, fetching mechanism is designed to work without auth.
-* No installation, placing _Void°Doctrine.exe_ to some writeable dir is enough.
+* No installation, placing single executable to some writeable dir is enough.
 * No external requirements beyond VC runtime.
 
 # •Reassembling•
