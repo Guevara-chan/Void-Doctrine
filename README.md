@@ -9,4 +9,5 @@ Developed to be as inconspicuous as possible, it's packed in single executable w
 * No external dependencies beyond VC runtime.
 
 # •Reassembling•
-__Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.
+__Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.  
+Automated build script provided as `release.nims`.
