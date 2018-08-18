@@ -1,2 +1,2 @@
-# Void-Doctrine
-Trust is a weakness
+# •Sum•
+__Void°Doctrine__ is a low-profile userdata observer, made to detect and log vKontakte page changes on demand.  
