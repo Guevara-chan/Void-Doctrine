@@ -3,6 +3,7 @@ __Void°Doctrine__ is a low-profile userdata observer, made to detect and log vi
 Developed to be as inconspicuous as possible, it's packed in single executable with no requirements beyond service [API token](https://vk.com/dev/access_token).
 
 # •Featuræ•
+* No online activity markers, fetching mechanism is designed to work without auth.
 * No installation, placing _Void°Doctrine.exe_ to some writeable dir is enough.
 * No account credentials required to work (stock token included).
 * No external dependencies beyond VC runtime.
