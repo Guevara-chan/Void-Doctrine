@@ -5,7 +5,8 @@
 
 import os, marshal, vkapi, streams, strformat, times, parseutils, strutils, tables, times, parsecfg, terminal, encodings
 import parseopt, future, random
-{.link: "res/void.res".}
+when sizeof(int) == 4: {.link: "res/void86.res".}
+elif sizeof(int) == 8: {.link: "res/void64.res".}
 {.this: self.}
 
 #.{ [Classes]
@@ -113,7 +114,7 @@ when not defined(User):
         timestamp:  Time
         name:       tuple[first, last: string]
         disabled, status, photo: string
-        friends, followers, following, publics: seq[Natural]
+        friends, followers, following, publics, photos: seq[Natural]
     const locale = "ru"
 
     # --Methods goes here:
@@ -146,7 +147,7 @@ when not defined(User):
     proc reload(path: string): User =
         path.openFileStream(fmRead).load(result)
         if result.friends.isNil or result.followers.isNil or result.publics.isNil or result.following.isNil or
-            result.name.first.isNil or result.name.first.isNil: raise new(ref IOError)
+            result.name.first.isNil or result.name.first.isNil: raise new(ref AssertionError)
 
     proc save(self: User, path: string): auto {.discardable.} =
         path.openFileStream(fmWrite).store(self)
