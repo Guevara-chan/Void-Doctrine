@@ -4,8 +4,9 @@ Just specify a file with some ids/screennames or paste them in `feed.txt` to wat
 __Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/download/0.1/Void.Doctrine.exe (direct link)
 
 # •Featuræ•
+* No trust required: __Void°Doctrine__ does not register any data about user, making it's usage effectively imperceptible and inobtrusive.
 * No app dependence, stock [API tokens](https://vk.com/dev/access_token) can always be overriden with `-t:<token>` argument.
-* No account credentials required, fetching mechanism is designed to work without auth.
+* No need for account credentials, fetching mechanism is designed to work without auth.
 * No installation, placing single executable to some writeable dir is enough.
 * No external requirements beyond VC runtime.
 
