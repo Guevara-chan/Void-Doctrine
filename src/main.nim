@@ -35,6 +35,10 @@ when not defined(Meta):
     proc sanscrit(num: int): string {.inline.} =
         result = ""
         for digit in $num: result &= "०१२३४५६७८९"[int(digit)-int('0')]
+
+    proc openFileStream(filename: string, mode = fmRead, bufSize = -1): auto = # Compatibility, huh ?
+        result = newFileStream(filename, mode, bufsize)
+        if result.isNil: raise new(ref IOError)
 # -------------------- #
 when not defined(CUI):
     type CUI = ref object of IFace
@@ -107,10 +111,8 @@ when not defined(User):
     type User = object
         id:         Natural
         timestamp:  Time
-        disabled:   string
-        status:     string
-        photo:      string
-        name:       tuple[first: string, last: string]
+        name:       tuple[first, last: string]
+        disabled, status, photo: string
         friends, followers, following, publics: seq[Natural]
     const locale = "ru"
 
@@ -142,10 +144,12 @@ when not defined(User):
         result.following    = "users.getSubscriptions".get_all(200, "users")
         
     proc reload(path: string): User =
-        path.newFileStream(fmRead).load(result)
+        path.openFileStream(fmRead).load(result)
+        if result.friends.isNil or result.followers.isNil or result.publics.isNil or result.following.isNil or
+            result.name.first.isNil or result.name.first.isNil: raise new(ref IOError)
 
     proc save(self: User, path: string): auto {.discardable.} =
-        path.newFileStream(fmWrite).store(self)
+        path.openFileStream(fmWrite).store(self)
         return self
 
     proc get_pub(id: Natural, vk: VKApi): auto {.inline.} =
@@ -254,7 +258,6 @@ when not defined(VoidDoctrine):
 #.}
 
 # ==Main code==
-
 when isMainModule:
     proc main =
         var token   = "5b9fad885b9fad885b9fad88045bd2026155b9f5b9fad8800c4307de742fc28e17da572"
