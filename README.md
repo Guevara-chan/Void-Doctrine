@@ -5,9 +5,9 @@ Just specify a file with some ids/screennames or paste them in `feed.txt` to wat
 
 # •Featuræ•
 * No account credentials required, fetching mechanism is designed to work without auth.
-* No app binding, other tokens can always be provided with `-t:<token>` argument.
+* No app dependence, other tokens can always be provided with `-t:<token>` argument.
 * No installation, placing _Void°Doctrine.exe_ to some writeable dir is enough.
-* No external dependencies beyond VC runtime.
+* No external requirements beyond VC runtime.
 
 # •Reassembling•
 __Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.  
