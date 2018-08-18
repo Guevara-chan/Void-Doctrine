@@ -6,7 +6,7 @@ Just specify a file with some ids/screennames or paste them in `feed.txt` to wat
 # •Featuræ•
 * No account credentials required, fetching mechanism is designed to work without auth.
 * No installation, placing _Void°Doctrine.exe_ to some writeable dir is enough.
-* No binding, API token can always be redefined with `-t:<token>' argument.
+* No binding, API token can always be redefined with `-t:\<token\>' argument.
 * No external dependencies beyond VC runtime.
 
 # •Reassembling•
