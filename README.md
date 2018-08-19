@@ -12,7 +12,7 @@ __Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/downl
 
 # •Reassembling•
 __Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.  
-x86/x64 cross-compilation was achieved through [TDM-GCC](http://tdm-gcc.tdragon.net/download) with automated build script provided as `release.nims`.
+x86/x64 cross-compilation can be achieved through [TDM-GCC](http://tdm-gcc.tdragon.net/download) with automated build script provided as `release.nims`.
 
 # •Brief samples of interfacing•
 ![image](https://user-images.githubusercontent.com/8768470/44298045-a76d4700-a2e4-11e8-8dd1-19707265e83e.png)
