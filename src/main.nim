@@ -267,11 +267,13 @@ when not defined(VoidDoctrine):
         log fmt"Parsing {fname} => {dest.path}...", "io"
         # Actual parsing.
         try:
+            var count = 0
             for entry in fname.lines:
                 let id = parse(entry)
-                if id > 0: discard spawn inspect(self, id, dest)
+                if id > 0: discard spawn inspect(id, dest); count.inc()
                 else: log fmt"Invalid entry encountered: {entry}"
             sync()
+            log "...Parsing complete ($#)" % count.account("page"), "io"
         except: log fmt"Feeder fault // {errinfo()}", "fault"
         return self
 #.}
