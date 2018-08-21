@@ -1,18 +1,19 @@
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
-# Void°Doctrine VK observer v0.1    #
+# Void°Doctrine VK observer v0.11   #
 # Developed in 2018 by V.A. Guevara #
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
 import os, marshal, vkapi, streams, strformat, times, parseutils, strutils, tables, times, parsecfg, terminal, encodings
-import parseopt, future, random
+import parseopt, future, random, threadpool, locks
 when sizeof(int) == 4: {.link: "res/void86.res".}
 elif sizeof(int) == 8: {.link: "res/void64.res".}
+{.experimental.}
 {.this: self.}
 
 #.{ [Classes]
 when not defined(Meta):
     type IFace  = ref object {.inheritable.}
-    method log(self: IFace, info: string, channel: string) {.base.} = discard
+    method log(self: IFace, info: string, channel: string) {.base gcsafe.} = discard
     const mottos = [
         "From below it devours",
         "Trust is a weakness",
@@ -33,9 +34,9 @@ when not defined(Meta):
     proc dequote(trash: JsonNode): auto {.inline.} =
         ($trash).strip(true, true, {'"'})
 
-    proc sanscrit(num: int): string {.inline.} =
-        result = ""
-        for digit in $num: result &= "०१२३४५६७८९"[int(digit)-int('0')]
+    # proc sanscrit(num: int): string {.inline.} =
+    #     result = ""
+    #     for digit in $num: result &= "०१२३४५६७८९"[int(digit)-int('0')]
 
     proc openFileStream(filename: string, mode = fmRead, bufSize = -1): auto = # Compatibility, huh ?
         result = newFileStream(filename, mode, bufsize)
@@ -67,7 +68,7 @@ when not defined(CUI):
         new(result, destroyCUI)
         result.conv = encodings.open("CP866", "UTF-8")
         result.log """  # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
-                        # Void°Doctrine VK observer v0.1    #
+                        # Void°Doctrine VK observer v0.11   #
                         # Developed in 2018 by V.A. Guevara #
                         # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #""".replace("  ", ""), "meta"
         result.log mottos.rand(), "motto"
@@ -81,7 +82,7 @@ when not defined(CUI):
         styledEcho fgWhite, styleBright, conv.convert prefix, color, style, conv.convert info
 # -------------------- #
 when not defined(History):
-    type History = object
+    type History = ref object
         path:   string
         data:   Config
         buffer: seq[string]
@@ -90,11 +91,12 @@ when not defined(History):
     proc init(self: type History, path: string): History =
         History(path: path, buffer: @[], data: try: path.loadConfig() except: newConfig())
 
-    proc remember(self: var History, info: string): auto {.discardable inline.} =
+    proc remember(self: History, info: string): auto {.discardable inline.} =
         buffer.add info
         return self
 
-    proc register(self: var History, sect: string): auto {.discardable inline.} =
+    proc register(self: History, sect: string): auto {.discardable inline.} =
+        if buffer.len == 0: return self 
         var idx = 0
         for entry in buffer:
             while true:
@@ -114,7 +116,7 @@ when not defined(User):
         timestamp:  Time
         name:       tuple[first, last: string]
         disabled, status, photo: string
-        friends, followers, following, publics, photos: seq[Natural]
+        friends, followers, following, publics: seq[Natural]
     const locale = "ru"
 
     # --Methods goes here:
@@ -162,23 +164,28 @@ when not defined(User):
 # -------------------- #
 when not defined(VoidDoctrine):
     type VoidDoctrine = ref object
-        vk:     VKApi
+        #vk:     VKApi
+        token:  string
         ui:     IFace
+    
+    var blocker: Lock
     const archive = (dir: "archive", ext: "json")
+    proc vk(self: VoidDoctrine): auto {.inline.} = newVKApi(token)    
 
     # --Methods goes here:
     proc init(kind: type VoidDoctrine, ui: IFace, token: string): VoidDoctrine =
         try:
-            result = VoidDoctrine(vk: newVkApi(token=token), ui: ui)
+            result = VoidDoctrine(token: token, ui: ui)
             discard result.vk.request("users.get", {"user_id": "1"}.toApi)
             ui.log fmt"Token digested: {token}", "net"
             setCurrentDir getAppDir()
             if not archive.dir.dirExists: archive.dir.createDir
+            blocker.initLock
         except: 
-            result.vk = nil
+            result.token = nil
             ui.log fmt"Startup fault // {errinfo()}", "fault"
 
-    proc log(self: VoidDoctrine, info: auto, channel = "fault"): auto {.discardable inline.} =
+    proc log(self: VoidDoctrine, info: auto, channel = "fault"): auto {.discardable gcsafe inline.} =
         ui.log $info, channel; return self
 
     proc diff[T](prev: seq[T], current: seq[T]): auto =
@@ -187,36 +194,42 @@ when not defined(VoidDoctrine):
         for entry in current:
             if entry in result: result.del(entry) else: result[entry] = true
 
-    proc inspect(self: VoidDoctrine, id: Natural, dest: var History): auto {.discardable.} =
+    proc inspect(self: VoidDoctrine, id: Natural, dest: History): auto {.gcsafe discardable.} =
         # Service defs.
-        template unnil(text: string): auto = either(text != nil, text, "<nil>")
+        template unnil(text: string): auto          = either(text != nil, text, "<nil>")
+        template mem(info: string, channel: string) = uibuffer.add (info, channel)
+        template reg(info: string)                  = histbuffer.add info
         template report(field: untyped, countable: string, name: string, handler: auto): auto =
-            log (" $# found" % prev.field.len.account(countable) & # Mandatory report.
+            mem (" $# found" % prev.field.len.account(countable) & # Mandatory report.
                 either(user.field.len != prev.field.len, " versus former " & $user.field.len, ".")), "remark"
             for id, added in prev.field.diff(user.field).pairs:
                 let msg = added.either("+$# added$#", "-$# removed$#") % [name, handler(id)]
-                log(msg, "changes")
-                dest.remember msg
+                mem msg, "changes"
+                reg msg
                 changes.inc()
         template report(was: untyped, now: untyped, name: string) =
             if now != was:
-                log "~$# was changed from $#" % [name, $was], "changes"
-                dest.remember "~$# changed to: $#" % [name, $now]
+                mem "~$# was changed from $#" % [name, $was], "changes"
+                reg "~$# changed to: $#" % [name, $now]
                 changes.inc()
         template report(field: untyped, name: string) = report(prev.field, user.field, name)
         # Initial setup.
-        var changes = 0
-        let path    = fmt"{archive.dir}/{id}.{archive.ext}"
-        let user: User = (try: id.load(vk) except: User())
-        if not user.disabled.isNilOrEmpty: log fmt"Unable to access userdata for {user}", "fail" 
+        var
+            uibuffer: seq[tuple[info: string, channel: string]] = @[]
+            histbuffer: seq[string]                             = @[]
+            changes                                             = 0
+        let 
+            path       = fmt"{archive.dir}/{id}.{archive.ext}"
+            user: User = (try: id.load(self.vk) except: User())
+        if not user.disabled.isNilOrEmpty: mem fmt"Unable to access userdata for {user}", "fail" 
         elif user.id > 0: # Actual parsing goes here.
-            log fmt"Acquired data for {user}:", "foreword"
-            log user.status.unnil, "remark"
-            let prev = (try: path.reload() except: User())
-            if prev.id > 0:    
+            let prev = (try: path.reload() except: User())        
+            mem fmt"Acquired data for {user}:", "foreword"
+            mem user.status.unnil, "remark"               
+            if prev.id > 0:
                 # Auxilary closures.
-                let fetch_user = (id: Natural) => fmt": {id.load(vk, true)}"
-                let fetch_group = (id: Natural) => fmt": {id.get_pub(vk)}"            
+                let fetch_user = (id: Natural) => fmt": {id.load(self.vk, true)}"
+                let fetch_group = (id: Natural) => fmt": {id.get_pub(self.vk)}"            
                 # Report blocks.
                 report prev.name.first, user.name.first,    "First name"
                 report prev.name.last,  user.name.last,     "Last name"
@@ -225,26 +238,30 @@ when not defined(VoidDoctrine):
                 report following,   "user sub",     "Subscription", fetch_user
                 report followers,   "subscriber",   "Subscriber",   fetch_user
                 report publics,     "public sub",   "Public",       fetch_group
-                log user.photo.unnil, "remark"
+                mem user.photo.unnil, "remark"
                 report photo,       "Photo"
-                # Saving down.
-                dest.register($user)
-                log fmt""" {changes.account("change")} detected since {prev.stamp}""", "remark"
-            else: log fmt"*No previous entry was found to compare, diff unavailable.", "remark"
+                # Reporting in.
+                mem fmt""" {changes.account("change")} detected since {prev.stamp}""", "remark"
+            else: mem fmt"*No previous entry was found to compare, diff unavailable.", "remark"
             # Fnalization.
             user.save(path)
-            log fmt"User data serialized as {path}", "afterword"
-        else: log fmt"Unable to access userdata for vk.com/id{id}", "fail"                
+            mem fmt"User data serialized as {path}", "afterword"
+        else: mem fmt"Unable to access userdata for vk.com/id{id}", "fail"
+        # Sync final.
+        withLock(blocker):
+            for x in histbuffer: dest.remember x
+            for x in uibuffer: log x[0], x[1]
+            discard dest.register($user)
         return self
 
     proc parse(self: VoidDoctrine, entry: TaintedString): Natural {.inline.} =
         if parseInt(entry, result) > 0: return result
-        let resp = vk@users.get(user_ids=entry)
+        let resp = self.vk@users.get(user_ids=entry)
         if resp.len > 0: return resp[0]["id"].dequote.parseInt
 
     proc feed(self: VoidDoctrine, fname: string): auto {.discardable.} =
         # Init setup.
-        if vk.isNil: return log(fmt"Unable to process without VK connection.", "fail")
+        if token.isNil: return log(fmt"Unable to process without VK connection.", "fail")
         let path = changeFileExt(fname, "hist")
         var dest = History.init(path)
         log fmt"Parsing {fname} => {dest.path}...", "io"
@@ -252,8 +269,9 @@ when not defined(VoidDoctrine):
         try:
             for entry in fname.lines:
                 let id = parse(entry)
-                if id > 0: inspect(id, dest)
+                if id > 0: discard spawn inspect(self, id, dest)
                 else: log fmt"Invalid entry encountered: {entry}"
+            sync()
         except: log fmt"Feeder fault // {errinfo()}", "fault"
         return self
 #.}
@@ -270,6 +288,6 @@ when isMainModule:
                     case key
                         of "token", "t": token = val
                 of cmdEnd: assert(false)
-        VoidDoctrine.init(CUI.init, token).feed(feeder)
+        VoidDoctrine.init(CUI.init, token).feed(feeder).ui = nil
     main()
     GC_fullCollect()
