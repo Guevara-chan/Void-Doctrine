@@ -54,6 +54,7 @@ when not defined(CUI):
         "fault":    (fgRed, styleDim, ""),
         "foreword": (fgCyan, styleBright, "┌"),
         "remark":   (fgBlack, styleBright, "├>"),
+        "unremark": (fgBlack, styleBright, "├■"),
         "changes":  (fgMagenta, styleBright, "│"),
         "afterword":(fgCyan, styleDim, "└"),
         }.toTable
@@ -196,7 +197,6 @@ when not defined(VoidDoctrine):
 
     proc inspect(self: VoidDoctrine, id: Natural, dest: History): auto {.gcsafe discardable.} =
         # Service defs.
-        template unnil(text: string): auto          = either(text != nil, text, "<nil>")
         template mem(info: string, channel: string) = uibuffer.add (info, channel)
         template reg(info: string)                  = histbuffer.add info
         template report(field: untyped, countable: string, name: string, handler: auto): auto =
@@ -213,6 +213,8 @@ when not defined(VoidDoctrine):
                 reg "~$# changed to: $#" % [name, $now]
                 changes.inc()
         template report(field: untyped, name: string) = report(prev.field, user.field, name)
+        template show(feed: string, rem: string) = 
+            if feed.isNilOrEmpty: mem "°No $# data available°" % rem, "unremark" else: mem feed, "remark"
         # Initial setup.
         var
             uibuffer: seq[tuple[info: string, channel: string]] = @[]
@@ -225,7 +227,8 @@ when not defined(VoidDoctrine):
         elif user.id > 0: # Actual parsing goes here.
             let prev = (try: path.reload() except: User())        
             mem fmt"Acquired data for {user}:", "foreword"
-            mem user.status.unnil, "remark"               
+            # Status out.
+            user.status.show "status"
             if prev.id > 0:
                 # Auxilary closures.
                 let fetch_user = (id: Natural) => fmt": {id.load(self.vk, true)}"
@@ -238,7 +241,7 @@ when not defined(VoidDoctrine):
                 report following,   "user sub",     "Subscription", fetch_user
                 report followers,   "subscriber",   "Subscriber",   fetch_user
                 report publics,     "public sub",   "Public",       fetch_group
-                mem user.photo.unnil, "remark"
+                user.photo.show     "photo"
                 report photo,       "Photo"
                 # Reporting in.
                 mem fmt""" {changes.account("change")} detected since {prev.stamp}""", "remark"
