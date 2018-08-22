@@ -8,7 +8,7 @@ __Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/downl
 * <u>No trust required</u>: __Void°Doctrine__ is completely agnostic about it's user, registering zero information beyond archive.
 * No particular app dependence, stock [API token](https://vk.com/dev/access_token) can easily be overriden with `-t:<token>` argument.
 * No need for account credentials, fetching mechanism is designed to work without auth.
-* No installation, placing single executable to some writeable dir is enough.
+* No installation, placing executable and auxiliary libs to some writeable dir is enough.
 
 # •Reassembling•
 __Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.  
