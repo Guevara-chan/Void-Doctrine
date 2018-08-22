@@ -4,7 +4,7 @@
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
 import os, marshal, vkapi, streams, strformat, times, parseutils, strutils, tables, times, parsecfg, terminal, encodings
-import parseopt, future, random, threadpool, locks
+import parseopt, future, random, threadpool, locks, sets
 when sizeof(int) == 4: {.link: "res/void86.res".}
 elif sizeof(int) == 8: {.link: "res/void64.res".}
 {.experimental.}
@@ -262,18 +262,20 @@ when not defined(VoidDoctrine):
     proc feed(self: VoidDoctrine, fname: string): auto {.discardable.} =
         # Init setup.
         if token.isNil: return log(fmt"Unable to process without VK connection.", "fail")
-        let path = changeFileExt(fname, "hist")
-        var dest = History.init(path)
+        let path    = changeFileExt(fname, "hist")
+        var dest    = History.init(path)
+        var pages: HashSet[Natural]
         log fmt"Parsing {fname} => {dest.path}...", "io"
         # Actual parsing.
         try:
-            var count = 0
+            pages.init(2)
             for entry in fname.lines:
                 let id = parse(entry)
-                if id > 0: discard spawn inspect(id, dest); count.inc()
-                else: log fmt"Invalid entry encountered: {entry}"
+                if id in pages: log fmt"Duplicate id in feed: vk.com/id{id}", "fault"
+                elif id > 0:    discard spawn inspect(id, dest); pages.incl id
+                else:           log fmt"Invalid entry encountered: {entry}", "fault"
             sync()
-            log "...Parsing complete ($#)" % count.account("page"), "io"
+            log "...Parsing complete ($#)" % pages.len.account("page"), "io"
         except: log fmt"Feeder fault // {errinfo()}", "fault"
         return self
 #.}
