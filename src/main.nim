@@ -274,7 +274,7 @@ when not defined(VoidDoctrine):
             pages.init(2)
             for entry in fname.lines:
                 let id = parse(entry)
-                if id in pages: log fmt"Duplicate id in feed: vk.com/id{id}", "fault"
+                if id in pages: log fmt"Duplicate entry encountered (vk.com/id{id}): {entry}", "fault"
                 elif id > 0:    discard spawn inspect(id, dest); pages.incl id
                 else:           log fmt"Invalid entry encountered: {entry}", "fault"
             sync()
