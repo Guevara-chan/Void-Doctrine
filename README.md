@@ -15,4 +15,4 @@ __Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.or
 x86/x64 cross-compilation can be achieved through [TDM-GCC](http://tdm-gcc.tdragon.net/download) by automated build script provided as `release.nims`.
 
 # •Brief samples of interfacing•
-![image](https://user-images.githubusercontent.com/8768470/44298045-a76d4700-a2e4-11e8-8dd1-19707265e83e.png)
+![image](https://user-images.githubusercontent.com/8768470/44452452-3ccb4c80-a5ff-11e8-9117-ff442670b4fc.png)
