@@ -2,7 +2,7 @@
 __Void°Doctrine__ is a low-profile userdata observer, made to detect and log visible [vKontakte](https://vk.com) page changes on demand.  
 Just specify a file with some ids/screennames or paste them in `feed.txt` to watch what people do when you don't look.  
 __Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/download/0.11/Void.Doctrine.exe (direct link)  
-⚠⚠ [OpenSSL](http://gnuwin32.sourceforge.net/packages/openssl.htm) package (already provided with Nim environment) is required to run __Void°Doctrine__ ⚠⚠
+⚠⚠ [OpenSSL](http://gnuwin32.sourceforge.net/packages/openssl.htm) package (already provided with Nim environment) is required to run pre-compiled __Void°Doctrine__ ⚠⚠
 
 # •Featuræ•
 * <u>No trust required</u>: __Void°Doctrine__ is completely agnostic about it's user, registering zero information beyond archive.
