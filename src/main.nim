@@ -125,9 +125,10 @@ when not defined(User):
         # Service def.
         proc interim(json: JsonNode, Δ = ""): auto = Δ.isNilOrEmpty.either(json, json[Δ])
         template get_all(feed: auto, max: Natural, Δ = ""): seq[Natural] =            
-            var storage: seq[Natural] = @[]
-            var count = vk.request(feed, {"user_id": $id, "count": $1}.toApi).interim(Δ)["count"].dequote.parseInt
-            var offset = 0
+            var 
+                storage: seq[Natural] = @[]
+                count = vk.request(feed, {"user_id": $id, "count": $1}.toApi).interim(Δ)["count"].dequote.parseInt
+                offset = 0
             while offset < count:
                  for x in vk.request(feed,{"user_id": $id,"count": $max,"offset": $offset}.toApi).interim(Δ)["items"]:
                      storage.add x.dequote.parseInt
@@ -165,10 +166,8 @@ when not defined(User):
 # -------------------- #
 when not defined(VoidDoctrine):
     type VoidDoctrine = ref object
-        #vk:     VKApi
         token:  string
         ui:     IFace
-    
     var blocker: Lock
     const archive = (dir: "archive", ext: "json")
     proc vk(self: VoidDoctrine): auto {.inline.} = newVKApi(token)    
@@ -200,8 +199,8 @@ when not defined(VoidDoctrine):
         template mem(info: string, channel: string) = uibuffer.add (info, channel)
         template reg(info: string)                  = histbuffer.add info
         template report(field: untyped, countable: string, name: string, handler: auto): auto =
-            mem (" $# found" % prev.field.len.account(countable) & # Mandatory report.
-                either(user.field.len != prev.field.len, " versus former " & $user.field.len, ".")), "remark"
+            mem (" $# found" % user.field.len.account(countable) & # Mandatory report.
+                either(user.field.len != prev.field.len, " versus former " & $prev.field.len, ".")), "remark"
             for id, added in prev.field.diff(user.field).pairs:
                 let msg = added.either("+$# added$#", "-$# removed$#") % [name, handler(id)]
                 mem msg, "changes"
