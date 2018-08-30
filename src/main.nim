@@ -44,7 +44,7 @@ when not defined(Meta):
 # -------------------- #
 when not defined(CUI):
     type CUI = ref object of IFace
-        conv: EncodingConverter
+        conv:   EncodingConverter
     const CUI_channels = {
         "meta":     (fgGreen, styleBright, ""),
         "motto":    (fgBlack, styleDim, ""),
@@ -96,10 +96,11 @@ when not defined(History):
         buffer.add info
         return self
 
-    proc register(self: History, sect: string): auto {.discardable inline.} =
-        if buffer.len == 0: return self 
+    proc register(self: History, sect: string, feed: seq[string] = nil): auto {.discardable inline.} =
+        let feed = feed.isNil.either(buffer, feed)
+        if feed.len == 0: return self 
         var idx = 0
-        for entry in buffer:
+        for entry in feed:
             while true:
                 idx.inc
                 let key = getTime().local.format("dd/MM/yyyy'•'HH'⫶'mm'⫶'ss") & 
@@ -108,7 +109,7 @@ when not defined(History):
                     data.setSectionKey(sect, key, entry)
                     break
         data.writeConfig(path)
-        buffer.setLen 0
+        if feed == buffer: buffer.setLen 0
         return self
 # -------------------- #
 when not defined(User):
@@ -188,6 +189,9 @@ when not defined(VoidDoctrine):
     proc log(self: VoidDoctrine, info: auto, channel = "fault"): auto {.discardable gcsafe inline.} =
         ui.log $info, channel; return self
 
+    proc log(self: VoidDoctrine, stack: seq[tuple[info, channel: string]]) =
+        for entry in stack: log(entry.info, entry.channel)
+
     proc diff[T](prev: seq[T], current: seq[T]): auto =
         result = newTable[T, bool]()
         for entry in prev: result[entry] = false
@@ -251,9 +255,8 @@ when not defined(VoidDoctrine):
         else: mem fmt"Unable to access userdata for vk.com/id{id}", "fail"
         # Sync final.
         withLock(blocker):
-            for x in histbuffer: dest.remember x
-            for x in uibuffer: log x[0], x[1]
-            discard dest.register($user)
+            log uibuffer
+            discard dest.register($user, histbuffer)
         return self
 
     proc parse(self: VoidDoctrine, entry: TaintedString): Natural {.inline.} =
