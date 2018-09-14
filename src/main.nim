@@ -34,10 +34,6 @@ when not defined(Meta):
     proc dequote(trash: JsonNode): auto {.inline.} =
         ($trash).strip(true, true, {'"'})
 
-    # proc sanscrit(num: int): string {.inline.} =
-    #     result = ""
-    #     for digit in $num: result &= "०१२३४५६७८९"[int(digit)-int('0')]
-
     proc openFileStream(filename: string, mode = fmRead, bufSize = -1): auto = # Compatibility, huh ?
         result = newFileStream(filename, mode, bufsize)
         if result.isNil: raise new(ref IOError)
@@ -198,7 +194,7 @@ when not defined(VoidDoctrine):
         for entry in current:
             if entry in result: result.del(entry) else: result[entry] = true
 
-    proc inspect(self: VoidDoctrine, id: Natural, dest: History): auto {.gcsafe discardable.} =
+    proc inspect(self: VoidDoctrine, id: Natural, dest_shared: ptr History): auto {.gcsafe discardable.} =
         # Service defs.
         template mem(info: string, channel: string) = uibuffer.add (info, channel)
         template reg(info: string)                  = histbuffer.add info
@@ -223,6 +219,7 @@ when not defined(VoidDoctrine):
             uibuffer: seq[tuple[info: string, channel: string]] = @[]
             histbuffer: seq[string]                             = @[]
             changes                                             = 0
+            dest                                                = cast[History](dest_shared)
         let 
             path       = fmt"{archive.dir}/{id}.{archive.ext}"
             user: User = (try: id.load(self.vk) except: User())
@@ -277,7 +274,7 @@ when not defined(VoidDoctrine):
             for entry in fname.lines:
                 let id = parse(entry)
                 if id in pages: log fmt"Duplicate entry encountered (vk.com/id{id}): {entry}", "fault"
-                elif id > 0:    discard spawn inspect(id, dest); pages.incl id
+                elif id > 0:    discard spawn inspect(id, cast[ptr History](dest)); pages.incl id
                 else:           log fmt"Invalid entry encountered: {entry}", "fault"
             sync()
             log "...Parsing complete ($#)" % pages.len.account("page"), "io"
