@@ -100,7 +100,7 @@ when not defined(History):
             while true:
                 idx.inc
                 let key = getTime().local.format("dd/MM/yyyy'•'HH'⫶'mm'⫶'ss") & 
-                    either(idx > 1 or buffer.len > 1, fmt"│{idx}", "")
+                    either(idx > 1 or feed.len > 1, fmt"│{idx}", "")
                 if data.getSectionValue(sect, key) == "":
                     data.setSectionKey(sect, key, entry)
                     break
