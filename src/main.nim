@@ -94,7 +94,6 @@ when not defined(History):
 
     proc register(self: History, sect: string, feed: seq[string] = nil): auto {.discardable inline.} =
         let feed = feed.isNil.either(buffer, feed)
-        if feed.len == 0: return self 
         var idx = 0
         for entry in feed:
             while true:
@@ -253,7 +252,7 @@ when not defined(VoidDoctrine):
         # Sync final.
         withLock(blocker):
             log uibuffer
-            discard dest.register($user, histbuffer)
+            if histbuffer.len > 0: dest.register($user, histbuffer)
         return self
 
     proc parse(self: VoidDoctrine, entry: TaintedString): Natural {.inline.} =
