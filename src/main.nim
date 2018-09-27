@@ -214,45 +214,47 @@ when not defined(VoidDoctrine):
         template show(feed: string, rem: string) = 
             if feed.isNilOrEmpty: mem "°No $# data available°" % rem, "unremark" else: mem feed, "remark"
         # Initial setup.
-        var
-            uibuffer: seq[tuple[info: string, channel: string]] = @[]
-            histbuffer: seq[string]                             = @[]
-            changes                                             = 0
-            dest                                                = cast[History](dest_shared)
-        let 
-            path       = fmt"{archive.dir}/{id}.{archive.ext}"
-            user: User = (try: id.load(self.vk) except: User())
-        if not user.disabled.isNilOrEmpty: mem fmt"Unable to access userdata for {user}", "fail" 
-        elif user.id > 0: # Actual parsing goes here.
-            let prev = (try: path.reload() except: User())        
-            mem fmt"Acquired data for {user}:", "foreword"
-            # Status out.
-            user.status.show "status"
-            if prev.id > 0:
-                # Auxilary closures.
-                let fetch_user = (id: Natural) => fmt": {id.load(self.vk, true)}"
-                let fetch_group = (id: Natural) => fmt": {id.get_pub(self.vk)}"            
-                # Report blocks.
-                report prev.name.first, user.name.first,    "First name"
-                report prev.name.last,  user.name.last,     "Last name"
-                report status,      "Status"
-                report friends,     "friend",       "Friend",       fetch_user
-                report following,   "user sub",     "Subscription", fetch_user
-                report followers,   "subscriber",   "Subscriber",   fetch_user
-                report publics,     "public sub",   "Public",       fetch_group
-                user.photo.show     "photo"
-                report photo,       "Photo"
-                # Reporting in.
-                mem fmt""" {changes.account("change")} detected since {prev.stamp}""", "remark"
-            else: mem fmt"*No previous entry was found to compare, diff unavailable.", "remark"
-            # Fnalization.
-            user.save(path)
-            mem fmt"User data serialized as {path}", "afterword"
-        else: mem fmt"Unable to access userdata for vk.com/id{id}", "fail"
-        # Sync final.
-        withLock(blocker):
-            log uibuffer
-            if histbuffer.len > 0: dest.register($user, histbuffer)
+        try: # Master handler.
+            var
+                uibuffer: seq[tuple[info: string, channel: string]] = @[]
+                histbuffer: seq[string]                             = @[]
+                changes                                             = 0
+                dest                                                = cast[History](dest_shared)
+            let 
+                path       = fmt"{archive.dir}/{id}.{archive.ext}"
+                user: User = (try: id.load(self.vk) except: User())
+            if not user.disabled.isNilOrEmpty: mem fmt"Unable to access userdata for {user}", "fail" 
+            elif user.id > 0: # Actual parsing goes here.
+                let prev = (try: path.reload() except: User())        
+                mem fmt"Acquired data for {user}:", "foreword"
+                # Status out.
+                user.status.show "status"
+                if prev.id > 0:
+                    # Auxilary closures.
+                    let fetch_user = (id: Natural) => fmt": {id.load(self.vk, true)}"
+                    let fetch_group = (id: Natural) => fmt": {id.get_pub(self.vk)}"            
+                    # Report blocks.
+                    report prev.name.first, user.name.first,    "First name"
+                    report prev.name.last,  user.name.last,     "Last name"
+                    report status,      "Status"
+                    report friends,     "friend",       "Friend",       fetch_user
+                    report following,   "user sub",     "Subscription", fetch_user
+                    report followers,   "subscriber",   "Subscriber",   fetch_user
+                    report publics,     "public sub",   "Public",       fetch_group
+                    user.photo.show     "photo"
+                    report photo,       "Photo"
+                    # Reporting in.
+                    mem fmt""" {changes.account("change")} detected since {prev.stamp}""", "remark"
+                else: mem fmt"*No previous entry was found to compare, diff unavailable.", "remark"
+                # Fnalization.
+                user.save(path)
+                mem fmt"User data serialized as {path}", "afterword"
+            else: mem fmt"Unable to access userdata for vk.com/id{id}", "fail"
+            # Sync final.
+            withLock(blocker):
+                log uibuffer
+                if histbuffer.len > 0: dest.register($user, histbuffer)
+        except: log fmt"Inspector fault // {errinfo()}", "fault"
         return self
 
     proc parse(self: VoidDoctrine, entry: TaintedString): Natural {.inline.} =
