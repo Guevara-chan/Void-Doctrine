@@ -11,7 +11,7 @@ __Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/downl
 * No installation, placing executable and auxiliary libs to some writeable dir is enough.
 
 # •Reassembling•
-__Void°Doctrine__ has been entirelly made with [Nim 0.18.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.  
+__Void°Doctrine__ has been entirelly made with [Nim 0.19.0](https://nim-lang.org) and external [VkApi](https://github.com/vk-brain/nimvkapi) package by VK Brain.  
 x86/x64 cross-compilation can be achieved through [TDM-GCC](http://tdm-gcc.tdragon.net/download) by automated build script provided as `release.nims`.
 
 # •Brief samples of interfacing•
