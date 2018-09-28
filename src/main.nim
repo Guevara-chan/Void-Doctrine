@@ -1,10 +1,10 @@
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
-# Void°Doctrine VK observer v0.11   #
+# Void°Doctrine VK observer v0.12   #
 # Developed in 2018 by V.A. Guevara #
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
 import os, marshal, vkapi, streams, strformat, times, parseutils, strutils, tables, times, parsecfg, terminal, encodings
-import parseopt, future, random, threadpool, locks, sets
+import parseopt, sugar, random, threadpool, locks, sets
 when sizeof(int) == 4: {.link: "res/void86.res".}
 elif sizeof(int) == 8: {.link: "res/void64.res".}
 {.experimental.}
@@ -65,7 +65,7 @@ when not defined(CUI):
         new(result, destroyCUI)
         result.conv = encodings.open("CP866", "UTF-8")
         result.log """  # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
-                        # Void°Doctrine VK observer v0.11   #
+                        # Void°Doctrine VK observer v0.12   #
                         # Developed in 2018 by V.A. Guevara #
                         # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #""".replace("  ", ""), "meta"
         result.log mottos.rand(), "motto"
@@ -82,18 +82,12 @@ when not defined(History):
     type History = ref object
         path:   string
         data:   Config
-        buffer: seq[string]
 
     # --Methods goes here:
     proc init(self: type History, path: string): History =
-        History(path: path, buffer: @[], data: try: path.loadConfig() except: newConfig())
+        History(path: path, data: try: path.loadConfig() except: newConfig())
 
-    proc remember(self: History, info: string): auto {.discardable inline.} =
-        buffer.add info
-        return self
-
-    proc register(self: History, sect: string, feed: seq[string] = nil): auto {.discardable inline.} =
-        let feed = feed.isNil.either(buffer, feed)
+    proc register(self: History, sect: string, feed: seq[string]): auto {.discardable inline.} =
         var idx = 0
         for entry in feed:
             while true:
@@ -104,7 +98,6 @@ when not defined(History):
                     data.setSectionKey(sect, key, entry)
                     break
         data.writeConfig(path)
-        if feed == buffer: buffer.setLen 0
         return self
 # -------------------- #
 when not defined(User):
@@ -119,10 +112,10 @@ when not defined(User):
     # --Methods goes here:
     proc load(id: Positive, vk: VKApi, brief = false): User =
         # Service def.
-        proc interim(json: JsonNode, Δ = ""): auto = Δ.isNilOrEmpty.either(json, json[Δ])
+        proc interim(json: JsonNode, Δ = ""): auto = either(Δ.len > 0, json[Δ], json)
         template get_all(feed: auto, max: Natural, Δ = ""): seq[Natural] =            
             var 
-                storage: seq[Natural] = @[]
+                storage: seq[Natural]
                 count = vk.request(feed, {"user_id": $id, "count": $1}.toApi).interim(Δ)["count"].dequote.parseInt
                 offset = 0
             while offset < count:
@@ -135,7 +128,7 @@ when not defined(User):
         let data    = vk@users.get(user_id=id, fields="status, photo_max", lang=locale)[0]
         result.name = (first: data["first_name"].dequote, last: data["last_name"].dequote)
         if "deactivated" in data: result.disabled = data["deactivated"].dequote
-        if brief or result.disabled != nil: return result
+        if brief or result.disabled.len > 0: return result
         # Additional parsing.
         result.status       = data["status"].dequote
         result.photo        = data["photo_max"].dequote
@@ -146,8 +139,6 @@ when not defined(User):
         
     proc reload(path: string): User =
         path.openFileStream(fmRead).load(result)
-        if result.friends.isNil or result.followers.isNil or result.publics.isNil or result.following.isNil or
-            result.name.first.isNil or result.name.first.isNil: raise new(ref AssertionError)
 
     proc save(self: User, path: string): auto {.discardable.} =
         path.openFileStream(fmWrite).store(self)
@@ -158,7 +149,7 @@ when not defined(User):
 
     proc `stamp`(self: User): auto {.inline.} = timestamp.local.format("dd/MM/yyyy '<'HH:mm:ss'>'")
     proc `$`(self: User): auto {.inline.} =
-        fmt"vk.com/id{id} [{name.first} {name.last}]" & disabled.isNilOrEmpty.either("", fmt" >> {disabled}")
+        fmt"vk.com/id{id} [{name.first} {name.last}]" & either(disabled.len > 0, fmt" >> {disabled}", "")
 # -------------------- #
 when not defined(VoidDoctrine):
     type VoidDoctrine = ref object
@@ -178,7 +169,7 @@ when not defined(VoidDoctrine):
             if not archive.dir.dirExists: archive.dir.createDir
             blocker.initLock
         except: 
-            result.token = nil
+            result.token = ""
             ui.log fmt"Startup fault // {errinfo()}", "fault"
 
     proc log(self: VoidDoctrine, info: auto, channel = "fault"): auto {.discardable gcsafe inline.} =
@@ -212,18 +203,18 @@ when not defined(VoidDoctrine):
                 changes.inc()
         template report(field: untyped, name: string) = report(prev.field, user.field, name)
         template show(feed: string, rem: string) = 
-            if feed.isNilOrEmpty: mem "°No $# data available°" % rem, "unremark" else: mem feed, "remark"
+            if feed.len == 0: mem "°No $# data available°" % rem, "unremark" else: mem feed, "remark"
         # Initial setup.
         try: # Master handler.
             var
-                uibuffer: seq[tuple[info: string, channel: string]] = @[]
-                histbuffer: seq[string]                             = @[]
-                changes                                             = 0
-                dest                                                = cast[History](dest_shared)
+                uibuffer: seq[tuple[info: string, channel: string]]
+                histbuffer: seq[string]
+                changes = 0
+                dest    = cast[History](dest_shared)
             let 
                 path       = fmt"{archive.dir}/{id}.{archive.ext}"
                 user: User = (try: id.load(self.vk) except: User())
-            if not user.disabled.isNilOrEmpty: mem fmt"Unable to access userdata for {user}", "fail" 
+            if user.disabled.len > 0: mem fmt"Unable to access userdata for {user}", "fail" 
             elif user.id > 0: # Actual parsing goes here.
                 let prev = (try: path.reload() except: User())        
                 mem fmt"Acquired data for {user}:", "foreword"
@@ -259,12 +250,11 @@ when not defined(VoidDoctrine):
 
     proc parse(self: VoidDoctrine, entry: TaintedString): Natural {.inline.} =
         if parseInt(entry, result) > 0: return result
-        let resp = self.vk@users.get(user_ids=entry)
-        if resp.len > 0: return resp[0]["id"].dequote.parseInt
+        return (try: self.vk@users.get(user_ids=entry)[0]["id"].dequote.parseInt except: 0)
 
     proc feed(self: VoidDoctrine, fname: string): auto {.discardable.} =
         # Init setup.
-        if token.isNil: return log(fmt"Unable to process without VK connection.", "fail")
+        if token.len == 0: return log(fmt"Unable to process without VK connection.", "fail")
         let path    = changeFileExt(fname, "hist")
         var dest    = History.init(path)
         var pages: HashSet[Natural]
