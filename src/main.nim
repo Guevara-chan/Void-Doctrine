@@ -213,7 +213,7 @@ when not defined(VoidDoctrine):
                 dest    = cast[History](dest_shared)
             let 
                 path       = fmt"{archive.dir}/{id}.{archive.ext}"
-                user: User = (try: id.load(self.vk) except: User())
+                user: User = (try: id.load(self.vk) except: User(status: getCurrentExceptionMsg()))
             if user.disabled.len > 0: mem fmt"Unable to access userdata for {user}", "fail" 
             elif user.id > 0: # Actual parsing goes here.
                 let prev = (try: path.reload() except: User())        
@@ -240,7 +240,7 @@ when not defined(VoidDoctrine):
                 # Fnalization.
                 user.save(path)
                 mem fmt"User data serialized as {path}", "afterword"
-            else: mem fmt"Unable to access userdata for vk.com/id{id}", "fail"
+            else: mem fmt"Unable to access userdata for vk.com/id{id} <- {user.status}", "fail"
             # Sync final.
             withLock(blocker):
                 log uibuffer
