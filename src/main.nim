@@ -240,7 +240,7 @@ when not defined(VoidDoctrine):
                 # Fnalization.
                 user.save(path)
                 mem fmt"User data serialized as {path}", "afterword"
-            else: mem fmt"Unable to access userdata for vk.com/id{id} @@ {user.status}", "fail"
+            else: mem fmt"Unable to access userdata for vk.com/id{id} << {user.status}", "fail"
             # Sync final.
             withLock(blocker):
                 log uibuffer
