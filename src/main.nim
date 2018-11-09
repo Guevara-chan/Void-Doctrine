@@ -94,14 +94,16 @@ when not defined(History):
 
     proc register(self: History, sect: string, feed: seq[string]): auto {.discardable inline.} =
         var idx = 0
+        var post: seq[tuple[key, val: string]]
         for entry in feed:
             while true:
                 idx.inc
                 let key = getTime().local.format("dd/MM/yyyy'•'HH'⫶'mm'⫶'ss") & 
                     either(idx > 1 or feed.len > 1, fmt"│{idx}", "")
                 if data.getSectionValue(sect, key) == "":
-                    data.setSectionKey(sect, key, entry)
+                    post.add (key, entry)
                     break
+        for entry in post: data.setSectionKey(sect, entry.key, entry.val)
         return self
 # -------------------- #
 when not defined(User):
