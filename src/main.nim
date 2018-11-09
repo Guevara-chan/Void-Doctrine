@@ -84,8 +84,13 @@ when not defined(History):
         data:   Config
 
     # --Methods goes here:
+    proc destroyHistory(self: auto) =
+        self.data.writeConfig(self.path)
+
     proc init(self: type History, path: string): History =
-        History(path: path, data: try: path.loadConfig() except: newConfig())
+        new(result, destroyHistory)
+        result.path = path
+        result.data = (try: path.loadConfig() except: newConfig())
 
     proc register(self: History, sect: string, feed: seq[string]): auto {.discardable inline.} =
         var idx = 0
@@ -97,7 +102,6 @@ when not defined(History):
                 if data.getSectionValue(sect, key) == "":
                     data.setSectionKey(sect, key, entry)
                     break
-        data.writeConfig(path)
         return self
 # -------------------- #
 when not defined(User):
