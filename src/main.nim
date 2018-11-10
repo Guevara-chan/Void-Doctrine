@@ -94,16 +94,14 @@ when not defined(History):
 
     proc register(self: History, sect: string, feed: seq[string]): auto {.discardable inline.} =
         var idx = 0
-        var post: seq[tuple[key, val: string]]
         for entry in feed:
             while true:
                 idx.inc
                 let key = getTime().local.format("dd/MM/yyyy'•'HH'⫶'mm'⫶'ss") & 
                     either(idx > 1 or feed.len > 1, fmt"│{idx}", "")
                 if data.getSectionValue(sect, key) == "":
-                    post.add (key, entry)
+                    data.setSectionKey(sect, key, entry)
                     break
-        for entry in post: data.setSectionKey(sect, entry.key, entry.val)
         return self
 # -------------------- #
 when not defined(User):
@@ -268,6 +266,7 @@ when not defined(VoidDoctrine):
         # Actual parsing.
         try:
             pages.init(2)
+            GC_disableMarkAndSweep()
             for entry in fname.lines:
                 let id = parse(entry)
                 if id in pages: log fmt"Duplicate entry encountered (vk.com/id{id}): {entry}", "fault"
