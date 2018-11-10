@@ -266,7 +266,6 @@ when not defined(VoidDoctrine):
         # Actual parsing.
         try:
             pages.init(2)
-            GC_disableMarkAndSweep()
             for entry in fname.lines:
                 let id = parse(entry)
                 if id in pages: log fmt"Duplicate entry encountered (vk.com/id{id}): {entry}", "fault"
@@ -291,5 +290,6 @@ when isMainModule:
                         of "token", "t": token = val
                 of cmdEnd: assert(false)
         VoidDoctrine.init(CUI.init, token).feed(feeder).ui = nil
+    GC_disableMarkAndSweep()
     main()
     GC_fullCollect()
