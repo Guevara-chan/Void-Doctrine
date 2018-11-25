@@ -97,8 +97,10 @@ when not defined(History):
                 if data.getSectionValue(sect, key) == "":
                     data.setSectionKey(sect, key, entry)
                     break
-        data.writeConfig(path)
         return self
+
+    proc finalize(self: History): auto {.discardable inline.} =
+        data.writeConfig(path)
 # -------------------- #
 when not defined(User):
     type User = object
@@ -268,6 +270,7 @@ when not defined(VoidDoctrine):
                 elif id > 0:    discard spawn inspect(id, cast[ptr History](dest)); pages.incl id
                 else:           log fmt"Invalid entry encountered: {entry}", "fault"
             sync()
+            dest.finalize()
             log "...Parsing complete ($#)" % pages.len.account("page"), "io"
         except: log fmt"Feeder fault // {errinfo()}", "fault"
         return self
