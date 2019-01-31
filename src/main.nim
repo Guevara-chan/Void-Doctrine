@@ -37,6 +37,9 @@ when not defined(Meta):
     proc openFileStream(filename: string, mode = fmRead, bufSize = -1): auto = # Compatibility, huh ?
         result = newFileStream(filename, mode, bufsize)
         if result.isNil: raise new(ref IOError)
+
+    template shadow(path): auto =
+        getTempDir().joinPath(path.extractFilename() & ".tmp")
 # -------------------- #
 when not defined(CUI):
     type CUI = ref object of IFace
@@ -88,7 +91,10 @@ when not defined(History):
         History(path: path, data: try: path.loadConfig() except: newConfig())
 
     proc register(self: History, sect: string, feed: seq[string]): auto {.discardable inline.} =
+        # Init setup.
         var idx = 0
+        let tmp_path = path.shadow()
+        # Main rewriting.
         for entry in feed:
             while true:
                 idx.inc
@@ -97,10 +103,11 @@ when not defined(History):
                 if data.getSectionValue(sect, key) == "":
                     data.setSectionKey(sect, key, entry)
                     break
-        return self
-
-    proc finalize(self: History): auto {.discardable inline.} =
-        data.writeConfig(path)
+        # Finalization.
+        data.writeConfig(tmp_path)
+        path.removeFile()
+        tmp_path.movefile(path)
+        return self        
 # -------------------- #
 when not defined(User):
     type User = object
@@ -145,7 +152,7 @@ when not defined(User):
     proc save(self: User, path: string): auto {.discardable.} =
         # Init setup.
         let
-            tmp_path = getTempDir().joinPath(path.extractFilename() & ".tmp")
+            tmp_path = path.shadow()
             stream   = tmp_path.openFileStream(fmWrite)
         # Failproof data saving.
         stream.store(self)
@@ -279,7 +286,6 @@ when not defined(VoidDoctrine):
                 elif id > 0:    discard spawn inspect(id, cast[ptr History](dest)); pages.incl id
                 else:           log fmt"Invalid entry encountered: {entry}", "fault"
             sync()
-            dest.finalize()
             log "...Parsing complete ($#)" % pages.len.account("page"), "io"
         except: log fmt"Feeder fault // {errinfo()}", "fault"
         return self
