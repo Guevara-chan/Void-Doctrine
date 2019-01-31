@@ -40,6 +40,20 @@ when not defined(Meta):
 
     template shadow(path): auto =
         getTempDir().joinPath(path.extractFilename() & ".tmp")
+
+    proc unshadow(path: string) =
+        let backup = path & ".bak"
+        try:
+            if path.fileExists(): # If there is something to backup.
+                discard backup.tryRemoveFile()
+                path.moveFile(backup)
+            # Actual unshadowing.
+            path.shadow().moveFile(path)
+            discard backup.tryRemoveFile()
+        except: # Restoring old copy.
+            if backup.fileExists():
+                discard path.tryRemoveFile()
+                backup.moveFile(path)
 # -------------------- #
 when not defined(CUI):
     type CUI = ref object of IFace
@@ -93,7 +107,6 @@ when not defined(History):
     proc register(self: History, sect: string, feed: seq[string]): auto {.discardable inline.} =
         # Init setup.
         var idx = 0
-        let tmp_path = path.shadow()
         # Main rewriting.
         for entry in feed:
             while true:
@@ -104,9 +117,8 @@ when not defined(History):
                     data.setSectionKey(sect, key, entry)
                     break
         # Finalization.
-        data.writeConfig(tmp_path)
-        path.removeFile()
-        tmp_path.movefile(path)
+        data.writeConfig(path.shadow())
+        path.unshadow()
         return self        
 # -------------------- #
 when not defined(User):
@@ -153,15 +165,12 @@ when not defined(User):
 
     proc save(self: User, path: string): auto {.discardable.} =
         # Init setup.
-        let
-            tmp_path = path.shadow()
-            stream   = tmp_path.openFileStream(fmWrite)
+        let stream   = path.shadow().openFileStream(fmWrite)
         # Failproof data saving.
         stream.store(self)
         stream.close()
         # Finalization.
-        path.removeFile()
-        tmp_path.moveFile(path)
+        path.unshadow()
         return self
 
     proc get_pub(id: Natural, vk: VKApi): auto {.inline.} =
