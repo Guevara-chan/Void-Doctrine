@@ -143,7 +143,16 @@ when not defined(User):
         path.openFileStream(fmRead).load(result)
 
     proc save(self: User, path: string): auto {.discardable.} =
-        path.openFileStream(fmWrite).store(self)
+        # Init setup.
+        let
+            tmp_path = getTempDir().joinPath(path.extractFilename() & ".tmp")
+            stream   = tmp_path.openFileStream(fmWrite)
+        # Failproof data saving.
+        stream.store(self)
+        stream.close()
+        # Finalization.
+        path.removeFile()
+        tmp_path.moveFile(path)
         return self
 
     proc get_pub(id: Natural, vk: VKApi): auto {.inline.} =
