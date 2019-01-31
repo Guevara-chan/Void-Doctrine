@@ -1,5 +1,5 @@
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
-# Void°Doctrine VK observer v0.12   #
+# Void°Doctrine VK observer v0.13   #
 # Developed in 2018 by V.A. Guevara #
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
@@ -68,7 +68,7 @@ when not defined(CUI):
         new(result, destroyCUI)
         result.conv = encodings.open("CP866", "UTF-8")
         result.log """  # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
-                        # Void°Doctrine VK observer v0.12   #
+                        # Void°Doctrine VK observer v0.13   #
                         # Developed in 2018 by V.A. Guevara #
                         # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #""".replace("  ", ""), "meta"
         result.log mottos.rand(), "motto"
@@ -147,7 +147,9 @@ when not defined(User):
         result.following    = "users.getSubscriptions".get_all(200, "users")
         
     proc reload(path: string): User =
-        path.openFileStream(fmRead).load(result)
+        let stream = path.openFileStream(fmRead)
+        stream.load(result)
+        stream.close()
 
     proc save(self: User, path: string): auto {.discardable.} =
         # Init setup.
