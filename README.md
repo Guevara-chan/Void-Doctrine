@@ -5,7 +5,7 @@ __Latest version:__ https://github.com/Guevara-chan/Void-Doctrine/releases/downl
 ❗ [OpenSSL](https://github.com/openssl/openssl) [libraries](https://github.com/Guevara-chan/Void-Doctrine/releases/tag/lib) (already provided with Nim installation) needs to be placed in same dir with pre-compiler binaries. ❗
 
 # •Featuræ•
-* <u>No trust required</u>: __Void°Doctrine__ is completely agnostic about it's user, registering zero information beyond archive.
+* <u>No trust required</u>: __Void°Doctrine__ is completely agnostic about its user, registering zero information beyond archive.
 * No particular app dependence, stock [API token](https://vk.com/dev/access_token) can easily be overriden with `-t:<token>` argument.
 * No need for account credentials, fetching mechanism is designed to work without auth.
 * No installation, placing executable and auxiliary libs to some writeable dir is enough.
