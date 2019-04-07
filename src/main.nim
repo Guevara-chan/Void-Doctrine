@@ -4,7 +4,7 @@
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
 import os, marshal, vkapi, streams, strformat, times, parseutils, strutils, tables, times, parsecfg, terminal, encodings
-import parseopt, sugar, random, threadpool, locks, sets
+import parseopt, sugar, random, threadpool, locks, sets, httpclient
 when sizeof(int) == 4: {.link: "res/void86.res".}
 elif sizeof(int) == 8: {.link: "res/void64.res".}
 {.experimental.}
@@ -95,6 +95,35 @@ when not defined(CUI):
         let (color, style, prefix) = CUI_channels[channel]
         styledEcho fgWhite, styleBright, conv.convert prefix, color, style, conv.convert info
 # -------------------- #
+when not defined(CRC32):
+    type CRC32 = ref object
+        value: uint32
+    const CRC32_table = block:
+        var result: array[0..255, uint32]
+        for i in 0..255:
+            var rem = i.uint32
+            for j in 0..7:
+                if (rem and 1) > 0'u32: rem = (rem shr 1) xor 0xedb88320.uint32
+                else: rem = rem shr 1
+            result[i] = rem
+        result
+
+    # --Methods goes here:
+    proc init(kind: type CRC32): CRC32 = 
+        const init_CRC32 = uint32(-1)
+        CRC32(value: init_CRC32)
+
+    proc recalc(self: CRC32, c: char) =
+        value = (value shr 8) xor CRC32_table[(value and 0xff) xor c.ord.uint32]
+
+    proc from_url(self: type CRC32, url: string): uint32 =
+        try:
+            let feed = newHttpClient().get(url).bodyStream
+            let accum = CRC32.init
+            while not feed.atEnd: accum.recalc feed.readChar
+            return accum.value
+        except: return 0
+# -------------------- #
 when not defined(History):
     type History = ref object
         path:   string
@@ -123,9 +152,10 @@ when not defined(History):
 # -------------------- #
 when not defined(User):
     type User = object
-        id:         Natural
+        id:          Natural
         timestamp:  Time
         name:       tuple[first, last: string]
+        photo_crc:  uint32
         disabled, status, photo: string
         friends, followers, following, publics: seq[Natural]
     const locale = "ru"
@@ -236,13 +266,12 @@ when not defined(VoidDoctrine):
         # Initial setup.
         try: # Master handler.
             var
-                uibuffer: seq[tuple[info: string, channel: string]]
+                uibuffer:   seq[tuple[info: string, channel: string]]
                 histbuffer: seq[string]
-                changes = 0
-                dest    = cast[History](dest_shared)
-            let 
-                path       = fmt"{archive.dir}/{id}.{archive.ext}"
-                user: User = (try: id.load(self.vk) except: User(status: getCurrentExceptionMsg()))
+                changes     = 0
+                dest        = cast[History](dest_shared)
+                user: User  = (try: id.load(self.vk) except: User(status: getCurrentExceptionMsg()))
+            let path = fmt"{archive.dir}/{id}.{archive.ext}"
             if user.disabled.len > 0: mem fmt"Unable to access userdata for {user}", "fail" 
             elif user.id > 0: # Actual parsing goes here.
                 let prev = (try: path.reload() except: User())        
@@ -261,8 +290,12 @@ when not defined(VoidDoctrine):
                     report following,   "user sub",     "Subscription", fetch_user
                     report followers,   "subscriber",   "Subscriber",   fetch_user
                     report publics,     "public sub",   "Public",       fetch_group
+                    # Photo CRC32 comparsion.
                     user.photo.show     "photo"
-                    report photo,       "Photo"
+                    if user.photo != prev.photo:
+                        user.photo_crc = CRC32.from_url(user.photo)
+                        if user.photo_crc != prev.photo_crc: report photo, "Photo"
+                    else: user.photo_crc = prev.photo_crc
                     # Reporting in.
                     mem fmt""" {changes.account("change")} detected since {prev.stamp}""", "remark"
                 else: mem fmt"*No previous entry was found to compare, diff unavailable.", "remark"
