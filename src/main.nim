@@ -110,7 +110,7 @@ when not defined(CRC32):
 
     # --Methods goes here:
     proc init(kind: type CRC32): CRC32 = 
-        const init_CRC32 = uint32(-1)
+        const init_CRC32 = not uint32(0)
         CRC32(value: init_CRC32)
 
     proc recalc(self: CRC32, c: char) =
