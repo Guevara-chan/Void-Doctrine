@@ -237,8 +237,7 @@ when not defined(VoidDoctrine):
     proc log(self: VoidDoctrine, stack: seq[tuple[info, channel: string]]) =
         for entry in stack: log(entry.info, entry.channel)
 
-    proc diff[T](prev: seq[T], current: seq[T]): auto =
-        result = newTable[T, bool]()
+    proc diff[T](prev: seq[T], current: seq[T]): Table[T, bool] =
         for entry in prev: result[entry] = false
         for entry in current:
             if entry in result: result.del(entry) else: result[entry] = true
@@ -323,7 +322,6 @@ when not defined(VoidDoctrine):
         log fmt"Parsing {fname} => {dest.path}...", "io"
         # Actual parsing.
         try:
-            pages.init(2)
             for entry in fname.lines:
                 let id = parse(entry)
                 if id in pages: log fmt"Duplicate entry encountered (vk.com/id{id}): {entry}", "fault"
