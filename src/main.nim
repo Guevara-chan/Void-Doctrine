@@ -14,6 +14,7 @@ elif sizeof(int) == 8: {.link: "res/void64.res".}
 when not defined(Meta):
     type IFace  = ref object {.inheritable.}
     method log(self: IFace, info: string, channel: string) {.base gcsafe.} = discard
+    method destroy(self: IFace) {.base gcsafe.} = discard
     const mottos = [
         "From below it devours",
         "Trust is a weakness",
@@ -73,27 +74,30 @@ when not defined(CUI):
         }.toTable
 
     # --Methods goes here:
-    proc destroyCUI(self: auto) =
-        self.conv.close()
-        resetAttributes()        
-        3000.sleep()
-
     proc init(self: type CUI): CUI =
-        new(result, destroyCUI)
+        new(result)
+        when defined(windows): # OS-dependent preparations.
+            proc set_console_title(title: WideCString): cint 
+                {.stdcall, discardable, dynlib: "kernel32", importc: "SetConsoleTitleW".}
+            proc set_console_output_cp(cp: cint): cint
+                {.stdcall, discardable, dynlib: "kernel32", importc: "SetConsoleOutputCP".}
+            "Void°Doctrine".newWideCString.set_console_title
+            866.set_console_output_cp
         result.conv = encodings.open("CP866", "UTF-8")
         result.log """  # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
                         # Void°Doctrine VK observer v0.13   #
                         # Developed in 2018 by V.A. Guevara #
                         # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #""".replace("  ", ""), "meta"
         result.log mottos.rand(), "motto"
-        when defined(windows):
-            proc set_console_title(title: WideCString): cint 
-                {.stdcall, dynlib: "kernel32", importc: "SetConsoleTitleW".}
-            discard "Void°Doctrine".newWideCString.set_console_title
 
     method log(self: CUI, info: string, channel: string) =
         let (color, style, prefix) = CUI_channels[channel]
         styledEcho fgWhite, styleBright, conv.convert prefix, color, style, conv.convert info
+
+    method destroy(self: CUI) =
+        self.conv.close()
+        resetAttributes()        
+        3000.sleep()
 # -------------------- #
 when not defined(CRC32):
     type CRC32 = ref object
@@ -152,7 +156,7 @@ when not defined(History):
 # -------------------- #
 when not defined(User):
     type User = object
-        id:          Natural
+        id:         Natural
         timestamp:  Time
         name:       tuple[first, last: string]
         photo_crc:  uint32
@@ -195,7 +199,7 @@ when not defined(User):
 
     proc save(self: User, path: string): auto {.discardable.} =
         # Init setup.
-        let stream   = path.shadow().openFileStream(fmWrite)
+        let stream = path.shadow().openFileStream(fmWrite)
         # Failproof data saving.
         stream.store(self)
         stream.close()
@@ -345,7 +349,5 @@ when isMainModule:
                     case key
                         of "token", "t": token = val
                 of cmdEnd: assert(false)
-        VoidDoctrine.init(CUI.init, token).feed(feeder).ui = nil
-    GC_disableMarkAndSweep()
+        VoidDoctrine.init(CUI.init, token).feed(feeder).ui.destroy
     main()
-    GC_fullCollect()
